@@ -26,7 +26,7 @@ install.pakages("ScGRADES")
 install.packages("devtools")
 
 # Install directly from GitHub
-devtools::install_github("TongWu2022/ScGRADES")
+devtools::install_github("LibinLab/scGRADES")
 
 #Install R package
 install.pakages("ScGRADES")
