@@ -1,10 +1,9 @@
 # Human Liver scRNA-seq Integrated Dataset
 
-This folder contains information about external data sources used in the **ScGRADES** package, specifically:
 
 Due to GitHub storage limitations, the actual **healthy human liver scRNA-seq integrated dataset** is not stored here.  
 
-You can download the dataset from the following location:
+You can download the liver integration dataset and meta data from the following location:
 
 # Download Link
 
