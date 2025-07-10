@@ -166,3 +166,274 @@ for (m in 1:length(marker6)) {
     mutate(Last_rank = 1:nrow(rank_ag_list2[[m]]))
 }
 saveRDS(rank_ag_list2, "/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/step6_DE/V5/R1_Dataset_DE/Eva_result/Center_DE_rank_PctMinus0.rds")
+
+#----
+#== Marker ROC ==#
+#----
+library(ROCR)
+library(ggplot2)
+library(dplyr)
+
+#读入文件
+scRNAlist <- readRDS("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/Figure2/F2_last/F2_A_cluster_diff/F2_ACMM_scRNAlist.rds")
+marker <- readRDS("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/Figure2/F2_last/F2_F_AUC/F2_F_AnnoMarker.rds")
+setwd("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/Figure2/F2_last/F2_Marker_ROC/")
+
+cellname <- "lrNK"
+gene <- "XCL1"
+NM <- str_c(cellname,gene,"ROC_Curve.pdf",sep = "_")
+
+roc_data_list <- list() # 用于存储所有基因的ROC数据
+
+for (i in 1:length(scRNAlist)) {
+  RNA <- scRNAlist[[i]]@assays$RNA@counts
+  celltype <- scRNAlist[[i]]@meta.data %>%
+    select(CellType,Cell1)
+  celltype2 <- scRNAlist[[i]]@meta.data %>% select(CellType) %>% distinct()
+  # 提取基因表达数据
+  exp <- RNA[gene,]
+  exp2 <- as.data.frame(exp) 
+  exp2 <- exp2 %>% mutate(Cell1 = rownames(exp2))
+  exp3 <- merge(exp2, celltype, "Cell1")
+  exp3 <- exp3 %>% mutate(CellType2 = CellType)
+  exp3$CellType2 <- ifelse(is.na(exp3$CellType), 1, ifelse(exp3$CellType == cellname, 0, 1))
+  #exp3$CellType2 <- ifelse(exp3$CellType == cellname, 0, 1)
+  colnames(exp3) <- c("Cell1", "exp","CellType", "CellType2")
+  # 计算AUC
+  prediction_gene <- NULL
+  prediction_gene <- prediction(predictions = exp3$exp, labels = exp3$CellType2, label.ordering = 1:0)
+  perf_gene <- performance(prediction.obj = prediction_gene, measure = "tpr", x.measure = "fpr")
+  auc_gene <- performance(prediction.obj = prediction_gene, measure = "auc")
+  auc_value <- round(auc_gene@y.values[[1]], digits = 3)
+  
+  # 提取ROC曲线数据
+  fpr_gene <- perf_gene@x.values[[1]]
+  tpr_gene <- perf_gene@y.values[[1]]
+  
+  # 创建ROC数据框
+  roc_data_gene <- data.frame(FPR = fpr_gene, TPR = tpr_gene, Gene = gene, AUC = auc_value)
+  
+  #添加Cell Class类型
+  cellclass <- scRNAlist[[i]]$CellClass[[1]]
+  roc_data_gene <- roc_data_gene %>% mutate(CellClass = cellclass)
+  roc_data_list[[i]] <- roc_data_gene
+  #roc_data <- bind_rows(roc_data, roc_data_gene)
+}
+roc_data <- do.call(rbind, roc_data_list)
+roc_data$CellClass <- gsub("Center","Core",roc_data$CellClass)
+roc_data$CellClass <- gsub("Normal","Middle",roc_data$CellClass)
+roc_data$CellClass <- gsub("Border","Marginal",roc_data$CellClass)
+saveRDS(roc_data, str_c(cellname,gene,"ROC_Curve.rds",sep = "_"))
+
+# 绘制ROC曲线
+All_AUC <- roc_data %>% filter(CellClass == "All") %>% select(AUC) %>% head(1)
+Core_AUC <- roc_data %>% filter(CellClass == "Core") %>% select(AUC) %>% head(1)
+Middle_AUC <- roc_data %>% filter(CellClass == "Middle") %>% select(AUC) %>% head(1)
+Marginal_AUC <- roc_data %>% filter(CellClass == "Marginal") %>% select(AUC) %>% head(1)
+
+colors <- c("All" = "#F3C861", 
+            "Core" = "#e98307", 
+            "Middle" = "#91BF6E", 
+            "Marginal" = "#b8c8db")
+
+test <- ggplot(roc_data, aes(x = FPR, y = TPR, color = CellClass, group = CellClass)) +
+  geom_line(size = 0.8) +  # 根据 CellClass 绘制不同颜色的线条
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "#c4c4c4", size = 0.8) +  # 添加对角线
+  labs(x = "False positive rate", y = "True positive rate") +
+  scale_color_manual(values = colors) +  # 为不同 CellClass 指定颜色
+  theme_minimal() +
+  theme(panel.grid = element_blank(), 
+        panel.border = element_rect(colour = "black", fill = NA, size = 0.5),
+        axis.text.y = element_text(angle = 0, color = "black", size = 14),
+        axis.text.x = element_text(angle = 0, color = "black", size = 14),
+        axis.title.y = element_text(size = 14),  
+        axis.title.x = element_text(size = 14),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        legend.position = "right") +
+  # 根据 AUC 值添加注释
+  annotate("text", x = 0.4, y = 0.24, label = paste("All AUC = ",All_AUC), color = "#F3C861", size = 4, hjust = 0) +
+  annotate("text", x = 0.4, y = 0.17, label = paste("Core AUC = ",Core_AUC), color = "#e98307", size = 4, hjust = 0) +
+  annotate("text", x = 0.4, y = 0.1, label = paste("Middle AUC = ",Middle_AUC), color = "#91BF6E", size = 4, hjust = 0) +
+  annotate("text", x = 0.4, y = 0.03, label = paste("Marginal AUC = ",Marginal_AUC), color = "#b8c8db", size = 4, hjust = 0)
+
+# 保存图像
+ggsave(NM, plot = test, width = 4.6, height = 3.3, limitsize = FALSE, dpi = 6000)
+
+#----
+#== AUROC ==#
+#gene expression matrix
+scRNA <- readRDS("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/step8_celltypist_classifer/ValidateDatasets/D2_GSE174748/h-livernew_celltype_V2.rds")
+RNA <- scRNA@assays$RNA@counts
+celltype <- scRNA@meta.data %>% 
+  select(CellType,Cell1)  %>%
+  dplyr::rename(CellType = celltype)
+celltype2 <- scRNA@meta.data %>% select(celltype) %>% distinct()
+
+# filter row sum = 0
+library(Matrix)
+row_sums <- rowSums(RNA)
+RNA_filter <- RNA[row_sums != 0, ]
+
+# gene list
+## Paper marker gene
+CellTaxonomy_marker <- readRDS("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Prepare/Database_Marker/CellTaxonomy_marker/Cell_Taxonomy_HumanLiver.rds")
+#CellTaxonomy_marker <- CellTaxonomy_marker %>% filter(Tissue_standard != "Blood")
+test1 <- CellTaxonomy_marker %>% 
+  filter(Cluster %in% c("B cell","CD8+ T","Plasma cell","Mast cell","pDC")) %>% 
+  filter(!is.na(Condition))
+test2 <- CellTaxonomy_marker %>% 
+  filter(Cluster == "pDC") %>% 
+  filter(Tissue_standard != "Blood")
+CellTaxonomy_marker_tmp <- CellTaxonomy_marker %>% 
+  filter(!(Cluster %in% c("B cell","CD8+ T","Plasma cell","Mast cell","pDC")))
+CellTaxonomy_marker <- rbind(CellTaxonomy_marker_tmp,test1,test2)
+CellTaxonomy_marker2 <- CellTaxonomy_marker %>% 
+  select(Cluster, Cell_Marker) %>% 
+  mutate(cluster_gene = str_c(Cluster, Cell_Marker, sep = "_")) %>%
+  dplyr::rename(tmpname = Cluster, tmpname2 = Cell_Marker) 
+
+papermarker <- distinct(CellTaxonomy_marker2) # 去重
+colnames(papermarker) <- c("cluster","gene","cluster_gene")
+gene1 <- papermarker$tmpname2
+gene2 <- rownames(RNA)
+gene3 <- intersect(gene1,gene2) #和RNA矩阵中有的基因取交集，避免脚本运行报错
+papermarker <- papermarker %>% 
+  filter(gene %in% gene3) %>% 
+  filter(cluster %in% celltype2$celltype)
+
+Genelist <- as.list(papermarker)
+Genelist2 <- papermarker %>% group_split(cluster)
+
+## annotation marker gene 
+Gene <- readRDS("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/Figure2/F2_last/F2_F_AUC/F2_F_AnnoMarker.rds")
+colnames(Gene) <- c("cluster","gene","cluster_gene")
+gene1 <- Gene$gene 
+gene2 <- rownames(RNA)
+gene3 <- intersect(gene1,gene2) #和RNA矩阵中有的基因取交集，避免脚本运行报错
+Gene <- Gene %>% filter(gene %in% gene3) %>% 
+  filter(cluster %in% celltype2$celltype)
+Genelist <- as.list(Gene)
+Genelist2 <- Gene %>% group_split(cluster)
+
+## Rank DE gene 
+Center_DE <- readRDS("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/step6_DE/V5/R1_Dataset_DE/Eva_result/Center_DE_rank_PctMinus0.rds")
+DEtop <- do.call(rbind, Center_DE)
+
+gene1 <- DEtop$Gene
+gene3 <- intersect(gene1,gene2)
+DEtop <- DEtop %>% filter(Gene %in% gene3)
+
+DErank_list <- list()
+for (i in 1:length(Genelist2)) {
+  tmp <- Genelist2[[i]]
+  CellType <- tmp$cluster[1]
+  num <- dim(tmp)[1][[1]]
+  DErank_list[[i]] <- DEtop %>% filter(cluster == CellType) %>% slice_min(order_by = Last_rank, n = num)
+}
+DErank <- do.call(rbind, DErank_list) %>% 
+  select(cluster, Gene) %>% 
+  dplyr::rename(gene = Gene)
+Genelist <- as.list(DErank)
+
+#== Gene AUC ==#
+group = "All"
+AUClist <- list()
+for (i in 1:length(Genelist[[1]])) {
+  cellname <- Genelist[[1]][[i]]
+  genename <- Genelist[[2]][[i]]
+  print(genename)
+  exp <- RNA[genename,]
+  exp2 <- as.data.frame(exp) 
+  exp2 <- exp2 %>% mutate(Cell1 = rownames(exp2))
+  exp3 <- merge(exp2, celltype, "Cell1")
+  exp3 <- exp3 %>% mutate(CellType2 = CellType)
+  exp3$CellType2 <- ifelse(exp3$CellType == cellname, 0, 1)
+  #AUC label.ordering = 0:1 指定0为正类，1为负类
+  prediction.use <- prediction(predictions = exp3$exp, labels = exp3$CellType2, label.ordering = 1:0)
+  perf.use <- performance(prediction.obj = prediction.use, measure = "auc")
+  auc.use <- round(x = perf.use@y.values[[1]], digits = 3)
+  AUClist[[i]] <- cbind(genename, auc.use, cellname, group)
+}
+AUC <- do.call(rbind, AUClist)
+AnnotateMarker_AUC_All <- as.data.frame(AUC)
+
+#----
+#== Plot ==#
+AllAUC <- rbind(RankDE_AUC, DatabaseMarker_AUC)
+colnames(AllAUC) <- c("genename","myAUC","cluster","CellClass")
+AllAUC$CellClass <- factor(AllAUC$CellClass, levels =c("AnnotateMarker","RankDE"))
+AllAUC$myAUC <- as.numeric(AllAUC$myAUC) 
+
+#cluster order
+RankDE_AUC$auc.use <- as.numeric(RankDE_AUC$auc.use)
+orderlist <- RankDE_AUC %>% group_split(cellname) 
+
+orderlist2 <- list()
+for (i in 1:length(orderlist)) {
+  orderlist2[[i]] <- cbind(as.character(orderlist[[i]]$cellname[[1]]), median(orderlist[[i]]$auc.use))
+}
+orderlist3 <- do.call(rbind, orderlist2) %>% as.data.frame()
+orderlist3$V2 <- as.numeric(orderlist3$V2)
+orderlist4 <- orderlist3 %>% arrange(-V2) %>% select(V1) 
+
+AllAUC$cluster <- factor(AllAUC$cluster, levels = orderlist4$V1)
+
+F4_C <- ggplot(AllAUC, aes(cluster, myAUC))+
+  geom_boxplot(aes(fill = CellClass, color = CellClass), 
+               alpha = 0.5, 
+               outlier.shape = NA,
+               width = 0.5,
+               position = position_dodge(width = 0.6)) +
+  #geom_jitter(aes(SampleName, JACCARD, color = SampleQuality), width = 0.05) +
+  # geom_dotplot(aes(cluster, myAUC, fill=CellClass,color = CellClass),
+  #              binaxis = 'y',
+  #              stackdir = 'center',
+  #              dotsize = 0.2,
+  #              position = position_dodge(width = 0.6)) +
+  scale_fill_manual(values = c("#eac590","#225f9b"))+
+  scale_color_manual(values = c("#eac590","#225f9b"))+
+  scale_fill_manual(values = c("#eac590","#225f9b")) +
+  scale_color_manual(values = c("#eac590","#225f9b")) +
+  theme_bw() +
+  labs(y = "AUC", x = "CellType") +
+  theme_classic() +
+  theme(strip.background = element_blank(),
+        strip.text.x = element_text(size = 10),
+        #legend.position = "none",
+        axis.title.x = element_text(size = 10,colour = "black"), #X轴标题大小
+        axis.title.y = element_text(size = 10,colour = "black"), #Y轴标题大小
+        axis.text.x = element_text(size = 10,colour = "black"), #X轴刻度标签大小
+        axis.text.y = element_text(size = 10,colour = "black")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  theme(panel.grid = element_blank()) +
+  ylim(0.4, 1.03)
+
+
+stat.test <- AllAUC %>% 
+  #data_new1[which(data_new1$group_number == 2),] %>%
+  group_by(cluster) %>%
+  pairwise_t_test(
+    myAUC ~ CellClass, 
+    #paired = FALSE, 
+    p.adjust.method = "fdr") %>%
+  add_xy_position(x = "cluster")
+
+
+stat2 <- stat.test %>% 
+  mutate(y.position = y.position - 0.02) 
+
+
+F4_C <- F4_C + stat_pvalue_manual(stat.test, label = "p.adj.signif",
+                                  bracket.size = 0.5, # 粗细
+                                  tip.length = 0.01,
+                                  label.size = 2.8)
+
+
+ggsave("F4_C_AnnoMarker_RankDE_AUC.pdf", 
+       plot = F4_C, width = 12,height = 5)
+saveRDS(stat.test, "F4_C_AnnoMarker_AUC_Ttest.rds")
+saveRDS(AllAUC, "F4_C_AnnoMarker_AUC.rds")
+saveRDS(DErank, "F4_C_AnnoMarker_DErank.rds")
+saveRDS(Gene, "F4_C_AnnoMarker_.rds")
+
+
