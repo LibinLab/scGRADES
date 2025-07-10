@@ -1,8 +1,11 @@
 # Data Folder for ScGRADES
 
-This folder is used to describe the locations of data required to run the ScGRADES package.
+This folder contains information about external data sources used in the **ScGRADES** package, specifically:
 
-Due to GitHub storage limitations, **actual data files are not stored here**. Instead, they can be downloaded from the following link(s):
+## Human Liver scRNA-seq Integrated Dataset
+
+Due to GitHub storage limitations, the actual **healthy human liver scRNA-seq integrated dataset** is not stored here.  
+You can download the dataset from the following location:
 
 ## Download Link
 
