@@ -1,28 +1,41 @@
-library(pacman)
-pacman::p_load(ggplot2,dplyr,tidyr,Matrix, gtools, ggsignif,ggsci,
-               stringr,Seurat,cowplot, clustree, ggpubr, scales,
-               tibble,patchwork,SCpubr,ROGUE, Hmisc, rstatix,
-               Scillus,magrittr,tidyverse,reticulate, plyr,
-               ggsci,reshape2,scDblFinder,SingleR,celldex,cluster, kBET)
+library(Seurat)
+library(ggplot2)
+library(profmem)
+library(rlog)
+library(future)
+#library(clustree)
 
-setwd("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/Figure2/F2_V3/") #change
-use_condaenv("/public/home/wutong/Software/miniconda3/envs/R4.1.1/bin/python")
-py_module_available("sklearn")
+dataset_merge.list=readRDS("dataset_merge_list_v4.rds")
+features <- SelectIntegrationFeatures(object.list = dataset_merge.list, nfeatures = 5000)
 
-#----
-#== Datasets Integrate ==#
+rlog::log_info('FindIntegrationAnchors')
 
-#== 
-scRNA <- readRDS("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/step4_annotation/scRNAanno.rds")
-Cellclass <- scRNA@meta.data$CellClass
-names(Cellclass) <- rownames(scRNA@meta.data)
-Idents(scRNA) <- Cellclass
-scRNAlist <- list()
-scRNAlist[[1]] <- subset(x = scRNA,subset = (CellClass == "Center"))
-scRNAlist[[2]] <- subset(x = scRNA,subset = (CellClass == "Normal"))
-scRNAlist[[3]] <- subset(x = scRNA,subset = (CellClass == "Border"))
+system.time({
+  dataset_merge.anchors <- FindIntegrationAnchors(object.list = dataset_merge.list, anchor.features = features, reduction = "rpca")#dataset_merge.list
+  })
 
+system.time({
+  dataset_merge_integrated <- IntegrateData(anchorset = dataset_merge.anchors)
+  })# output is seurat object
 
+#saveRDS(dataset_merge.anchors,file = "/data/guositong/project/wutong_annotation/Integration/V4_5000HVG_96batch/dataset_merge_list_v3.rds")
+#saveRDS(dataset_merge_integrated,file = "/data/guositong/project/wutong_annotation/Integration/V4_5000HVG_96batch/dataset_merge_list_v3.rds")
 
-#----
-#== uamp ==#
+#analysis of integrated object
+rlog::log_info('analysis of integrated object')
+DefaultAssay(dataset_merge_integrated) <- "integrated"
+dataset_merge_integrated <- ScaleData(dataset_merge_integrated)
+dataset_merge_integrated <- RunPCA(dataset_merge_integrated, npcs = 30)
+dataset_merge_integrated <- RunUMAP(dataset_merge_integrated, reduction = "pca", dims = 1:30)
+dataset_merge_integrated <- FindNeighbors(dataset_merge_integrated, reduction = "pca", dims = 1:30)
+dataset_merge_integrated <- FindClusters(dataset_merge_integrated, resolution = 1)
+
+#save file
+saveRDS(dataset_merge_integrated, file = "dataset_integrated_analyzed.rds") 
+
+#visualisation
+p1 <- DimPlot(dataset_merge_integrated, reduction = "umap", group.by = "samplebatch",raster=FALSE)
+p2 <- DimPlot(dataset_merge_integrated, reduction = "umap", group.by = "sample",raster=FALSE)
+p3 <- DimPlot(dataset_merge_integrated , reduction = "umap", label = TRUE, repel = TRUE,raster=FALSE)
+ggsave("p1_test_res1.pdf", plot = p1+p2+p3, width = 45, height = 10)
+
