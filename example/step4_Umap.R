@@ -3,10 +3,10 @@
 library(pacman)
 pacman::p_load(ggplot2,dplyr,tidyr,Matrix, Seurat, tidyverse)
 
-setwd("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/Figure2/F2_V3/") #change
+setwd("/your_payh/re") #change
 
 scRNAlist2 <- list()
-scRNA <- readRDS("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/step4_annotation/scRNAanno.rds")
+scRNA <- readRDS("scRNAanno.rds") ## Annotated RDS object list of four populations: all cell, core cell, intermadiate cell, marginal cell
 scRNAlist_tmp <- SplitObject(scRNA, split.by = "CellClass")
 scRNAtmp <- scRNAlist_tmp[[2]]
 scRNAlist <- SplitObject(scRNAtmp, split.by = "samplebatch")
@@ -24,15 +24,11 @@ scRNA_CNB <- ScaleData(scRNA_CNB,
                        #vars.to.regress = c("S.Score", "G2M.Score","percent_mito"),
                        features =rownames(scRNA_CNB))
 scRNA_CNB <- RunPCA(scRNA_CNB)
-#scRNA_CNB <- RunPCA(scRNA_CNB, features=VariableFeatures(scRNA_CNB),verbose = FALSE)
 scRNA_CNB <- FindNeighbors(scRNA_CNB, reduction = "pca")
-#scRNA_CNB <- FindClusters(scRNA_CNB, resolution = i)
 scRNA_CNB <- RunUMAP(scRNA_CNB,dims=1:30)
 scRNA_CNB <- RunTSNE(scRNA_CNB,dims=1:30)
-# setwd("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/Figure2/F2_V2/")
-# saveRDS(scRNA_CNB, "P1_2_scRNAlist_anno_UMAP_border.rds")
 
-#(2)分割降维聚类
+#(2)integration
 #scRNAlist_reintegrate
 scRNAlist <- SplitObject(scRNA, split.by = "CellClass")
 for(x in 1:length(scRNAlist)){
