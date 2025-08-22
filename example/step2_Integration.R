@@ -3,25 +3,21 @@ library(ggplot2)
 library(profmem)
 library(rlog)
 library(future)
-#library(clustree)
 
+# Load a list of RDS objects after QC for individual samples
 dataset_merge.list=readRDS("dataset_merge_list_v4.rds")
 features <- SelectIntegrationFeatures(object.list = dataset_merge.list, nfeatures = 5000)
 
 rlog::log_info('FindIntegrationAnchors')
 
 system.time({
-  dataset_merge.anchors <- FindIntegrationAnchors(object.list = dataset_merge.list, anchor.features = features, reduction = "rpca")#dataset_merge.list
+  dataset_merge.anchors <- FindIntegrationAnchors(object.list = dataset_merge.list, anchor.features = features, reduction = "rpca")
   })
 
 system.time({
   dataset_merge_integrated <- IntegrateData(anchorset = dataset_merge.anchors)
   })# output is seurat object
 
-#saveRDS(dataset_merge.anchors,file = "/data/guositong/project/wutong_annotation/Integration/V4_5000HVG_96batch/dataset_merge_list_v3.rds")
-#saveRDS(dataset_merge_integrated,file = "/data/guositong/project/wutong_annotation/Integration/V4_5000HVG_96batch/dataset_merge_list_v3.rds")
-
-#analysis of integrated object
 rlog::log_info('analysis of integrated object')
 DefaultAssay(dataset_merge_integrated) <- "integrated"
 dataset_merge_integrated <- ScaleData(dataset_merge_integrated)
