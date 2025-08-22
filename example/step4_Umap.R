@@ -19,6 +19,7 @@ scRNAlist[[i]] <- FindVariableFeatures(scRNAlist[[i]], selection.method = "vst",
 features <- SelectIntegrationFeatures(object.list = scRNAlist, nfeatures = 2000)
 scRNA.anchors <- FindIntegrationAnchors(object.list = scRNAlist,dims = 1:30)     
 scRNA_CNB <- IntegrateData(anchorset = scRNA.anchors, k.weight = 25)
+DefaultAssay(scRNA_CNB) <- "integrated"
 scRNA_CNB <- ScaleData(scRNA_CNB,
                        #vars.to.regress = c("S.Score", "G2M.Score","percent_mito"),
                        features =rownames(scRNA_CNB))
