@@ -168,6 +168,12 @@ library(ROCR)
 library(ggplot2)
 library(dplyr)
 
+# The following naming corresponds to:
+# All - all cell
+# Center - core cell
+# Normal - intermediate cell
+# Border - marginal cell
+
 #读入文件
 # Load a list of re-integrated RDS objects from four populations (all cells included)
 scRNAlist <- readRDS("All_core_inter_marg.rds")
