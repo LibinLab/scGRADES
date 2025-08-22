@@ -12,7 +12,8 @@ py_module_available("sklearn") #check
 
 #----
 #== Part2 QC ==#
-scRNAlist <- list()
+# Load a list of single-sample RDS objects (each element corresponds to one sample)
+scRNAlist <- readRDS("sample_list.rds")
 DbState <- list()
 nFeatureMed <- list()
 nCountMed <- list()
