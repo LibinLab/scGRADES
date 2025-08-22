@@ -18,7 +18,10 @@ Imports:
     Matrix,
     igraph,
     magrittr,
-    rlang
+    rlang,
+    bigdist,
+    cli,
+    stats
 Suggests:
     testthat,
     knitr,

@@ -16,22 +16,24 @@
 #' @importFrom dplyr mutate case_when select bind_rows
 #' @importFrom tibble tibble
 #' @importFrom rlang sym
-#' @importFrom Seurat AddMetaData
+#' @importFrom Seurat AddMetaData 
+#' @importFrom bigdist bigdist_extract
+#' @importFrom cli cli_process_start cli_process_done
 #' 
 #' @examples
 #' \dontrun{
 #' scRNA <- IdentifyCoreCells(scRNA, dist, top_n = 20, resolutions = seq(0.1, 1.5, 0.1))
 #' }
 
-utils::globalVariables(c("Cell1", "Cell2", "Dist", "CellClass"))
+utils::globalVariables(c("Cell1", "Cell2", "Dist", "CellClass", "pca"))
 
-IdentifyCoreCells <- function(scRNA, dist, top_n = 20, resolutions = seq(0.1, 1.5, 0.1)) {
+IdentifyCoreCells_inter <- function(scRNA, dist, top_n = 20, resolutions = seq(0.1, 1.5, 0.1)) {
 #  library(dplyr)
 #  library(purrr)
 #  library(stringr)
   
   meta <- scRNA@meta.data
-  cell_names <- colnames(dist)
+  cell_names <- rownames(pca)
   
   res_cols <- grep("snn_res", colnames(meta), value = TRUE)
   if (length(res_cols) == 0) stop("No clustering resolutions found (e.g., 'snn_res.') in metadata.")
@@ -39,9 +41,11 @@ IdentifyCoreCells <- function(scRNA, dist, top_n = 20, resolutions = seq(0.1, 1.
   
   # Get top-n neighbors for each cell
   top_list <- purrr::map(seq_along(cell_names), function(i) {
-    d_col <- dist[, i]
+    #d_col <- dist[, i]
+    d_col <- bigdist::bigdist_extract(dist, , i) 
+    rownames(d_col) <- cell_names
     cell1 <- cell_names[i]
-    df <- tibble::tibble(Cell2 = names(d_col), Dist = d_col) %>%
+    df <- tibble::tibble(Cell2 = rownames(d_col), Dist = d_col[,1]) %>%
       dplyr::filter(Cell2 != cell1) %>%
       dplyr::slice_min(Dist, n = top_n)
     df$Cell1 <- cell1
@@ -79,9 +83,9 @@ IdentifyCoreCells <- function(scRNA, dist, top_n = 20, resolutions = seq(0.1, 1.
     res_ratio_df <- dplyr::bind_rows(ratio_list) %>%
       dplyr::mutate(Resolution = paste0("res_", res)) %>%
       dplyr::mutate(CellClass = case_when(
-        Ratio == 1 ~ "Center",
-        Ratio >= 0.5 ~ "Normal",
-        TRUE ~ "Border"
+        Ratio == 1 ~ "Core",
+        Ratio >= 0.5 ~ "Intermediate",
+        TRUE ~ "Marginal"
       ))
     all_ratios[[as.character(res)]] <- res_ratio_df
     all_topn_annot[[as.character(res)]] <- dplyr::bind_rows(annot_list)
@@ -94,14 +98,14 @@ IdentifyCoreCells <- function(scRNA, dist, top_n = 20, resolutions = seq(0.1, 1.
   sum_SameClusterRatio <- SameClusterRatio %>%
     dplyr::group_by(Cell1) %>%
     dplyr::summarise(
-      SumCenter = sum(CellClass == "Center"),
-      SumNormal = sum(CellClass == "Normal"),
-      SumBorder = sum(CellClass == "Border")
+      SumCenter = sum(CellClass == "Core"),
+      SumNormal = sum(CellClass == "Intermediate"),
+      SumBorder = sum(CellClass == "Marginal")
     ) %>%
     dplyr::mutate(CellClass = dplyr::case_when(
       SumCenter == length(resolutions) ~ "core cell",
       SumBorder != 0 ~ "marginal cell",
-      TRUE ~ "middle cell"
+      TRUE ~ "intermediate cell"
     ))
   # Add back to Seurat meta data
   CellPopulations <- sum_SameClusterRatio %>% 
@@ -113,4 +117,10 @@ IdentifyCoreCells <- function(scRNA, dist, top_n = 20, resolutions = seq(0.1, 1.
   CellPopulations <- CellPopulations %>% dplyr::select(-Cell1)
   scRNA <- Seurat::AddMetaData(scRNA, metadata = CellPopulations)
   return(scRNA)
+}
+
+IdentifyCoreCells <- function(...) {
+  id <- cli::cli_process_start("Identify Core Cell population ...")
+  on.exit(cli::cli_process_done(id), add = TRUE)
+  IdentifyCoreCells_inter(...)
 }

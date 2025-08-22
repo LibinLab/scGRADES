@@ -10,7 +10,8 @@
 #' @return A Seurat object with clustering results at all specified resolutions saved in meta.data.
 #' @export
 #'
-#' @importFrom Seurat DefaultAssay<- FindNeighbors FindClusters
+#' @importFrom Seurat DefaultAssay<- FindNeighbors FindClusters 
+#' @importFrom cli cli_process_start cli_process_done
 #'
 #' @examples
 #' \dontrun{
@@ -20,7 +21,7 @@
 #' }
                             
 
-FindClusterAcrossRes <- function(seurat_obj,
+FindClusterAcrossRes_inter <- function(seurat_obj,
                                     resolutions = seq(0.1, 1.5, 0.1),
                                     assay = "integrated") {
   #require(Seurat)
@@ -31,4 +32,10 @@ FindClusterAcrossRes <- function(seurat_obj,
     seurat_obj <- Seurat::FindClusters(seurat_obj, resolution = res)
   }
   return(seurat_obj)
+}
+
+FindClusterAcrossRes <- function(...) {
+  id <- cli::cli_process_start("Building graph & clustering across resolutions ...")
+  on.exit(cli::cli_process_done(id), add = TRUE)
+  FindClusterAcrossRes_inter(...)
 }
