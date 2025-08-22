@@ -5,6 +5,12 @@ pacman::p_load(ggplot2,dplyr,tidyr,Matrix, Seurat, tidyverse)
 
 setwd("/your_payh/re") #change
 
+# The following naming corresponds to:
+# All - all cell
+# Center - core cell
+# Normal - intermediate cell
+# Border - marginal cell
+
 scRNAlist2 <- list()
 scRNA <- readRDS("scRNAanno.rds") ## Annotated RDS object list of four populations: all cell, core cell, intermadiate cell, marginal cell
 scRNAlist_tmp <- SplitObject(scRNA, split.by = "CellClass")
