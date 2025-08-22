@@ -7,22 +7,25 @@ pacman::p_load(ggplot2,dplyr,tidyr,Matrix, gtools, ggsignif,ggsci,
                Scillus,magrittr,tidyverse,reticulate, plyr,
                ggsci,reshape2,scDblFinder,SingleR,celldex,cluster, kBET)
 
-setwd("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/Figure2/F2_V3/") #change
-use_condaenv("/public/home/wutong/Software/miniconda3/envs/R4.1.1/bin/python")
+setwd("/your_path/re/") #change
+use_condaenv("/yourpath/miniconda3/envs/R4.1.1/bin/python")
 py_module_available("sklearn")
 
 #----
 #==down sample==#
-#对三种细胞类型数据下采样后分割，再聚类
-scRNA <- readRDS("/public/home/wutong/Project/PJ3_HumanLiver_scRNAseq_Databse/Result/step4_annotation/BC_anno/D9_BC_anno.rds")
+# Load the integrated scRNA object for running scGRADES, 
+# with metadata containing population information for three groups
+scRNA <- readRDS("scRNA.rds")
 Cellclass <- scRNA@meta.data$CellClass
 names(Cellclass) <- rownames(scRNA@meta.data)
 Idents(scRNA) <- Cellclass
 scRNAlist <- list()
 scRNAlist2 <- list()
-scRNAlist[[1]] <- subset(x = scRNA,subset = (CellClass == "Center"))
-scRNAlist[[2]] <- subset(x = scRNA,subset = (CellClass == "Normal"))
-scRNAlist[[3]] <- subset(x = scRNA,subset = (CellClass == "Border"))
+
+# Perform downsampling on three cell types, split the data, and conduct clustering
+scRNAlist[[1]] <- subset(x = scRNA,subset = (CellPopulation == "core"))
+scRNAlist[[2]] <- subset(x = scRNA,subset = (CellPopulation == "intermediate"))
+scRNAlist[[3]] <- subset(x = scRNA,subset = (CellPopulation == "marginal"))
 
 scRNAlist2[[1]] <- subset(scRNA, downsample = 20487) 
 scRNAlist2[[2]] <- subset(scRNAlist[[1]], downsample = 20487)
@@ -33,7 +36,7 @@ scRNAlist2[[4]] <- subset(scRNAlist[[3]], downsample = 20487)
 scRNAlist <- list()
 scRNAlist <- scRNAlist2
 scRNAlist[[1]]@meta.data <- scRNAlist[[1]]@meta.data %>% 
-  dplyr::rename(CellClass2 = CellClass) %>% mutate(CellClass = "All")
+  dplyr::rename(CellPopulation2 = CellPopulation) %>% mutate(CellPopulation = "All")
 
 SStable <- list()
 smp_meta <- list()
@@ -69,7 +72,7 @@ for(x in 1:length(scRNAlist)) {
 
 
 for(y in 1:length(scRNAlist)){
-  name <- head(scRNAlist[[y]]@meta.data$CellClass,1)
+  name <- head(scRNAlist[[y]]@meta.data$CellPopulation,1)
   tmpSmpmeta <- data.matrix(data.frame(Smp_meta[[y]]))
   assign(name,tmpSmpmeta)
 }
@@ -83,36 +86,36 @@ from sklearn import metrics
 from sklearn.metrics.cluster import normalized_mutual_info_score
 
 tmpNMI_all = list()
-tmpNMI_center = list()
-tmpNMI_normal = list()
-tmpNMI_border = list()
+tmpNMI_core = list()
+tmpNMI_intermediate = list()
+tmpNMI_marginal = list()
 NMIlist_all = list()
-NMIlist_center = list()
-NMIlist_normal = list()
-NMIlist_border = list() #change
+NMIlist_core = list()
+NMIlist_intermediate = list()
+NMIlist_marginal = list() #change
 for x, y in zip(range(0,14), range(1,15)):
-  tmpNMI_all = normalized_mutual_info_score(r.All[:,x], r.All[:,y])
-  tmpNMI_center = normalized_mutual_info_score(r.Center[:,x], r.Center[:,y]) #change
-  tmpNMI_normal = normalized_mutual_info_score(r.Normal[:,x], r.Normal[:,y])
-  tmpNMI_border = normalized_mutual_info_score(r.Border[:,x], r.Border[:,y])
+  tmpNMI_all = normalized_mutual_info_score(r.all[:,x], r.all[:,y])
+  tmpNMI_core = normalized_mutual_info_score(r.core[:,x], r.core[:,y]) #change
+  tmpNMI_intermediate = normalized_mutual_info_score(r.intermediate[:,x], r.intermediate[:,y])
+  tmpNMI_marginal = normalized_mutual_info_score(r.marginal[:,x], r.marginal[:,y])
   NMIlist_all.append(tmpNMI_all)
-  NMIlist_center.append(tmpNMI_center) #change
-  NMIlist_normal.append(tmpNMI_normal)
-  NMIlist_border.append(tmpNMI_border)
+  NMIlist_center.append(tmpNMI_core) #change
+  NMIlist_normal.append(tmpNMI_intermediate)
+  NMIlist_marginal.append(tmpNMI_marginal)
 quit
 
 NMI_list <- list()
-NMI_list$All <- data.frame(py$NMIlist_all) 
-NMI_list$Center <- data.frame(py$NMIlist_center) 
-NMI_list$Normal <- data.frame(py$NMIlist_normal)
-NMI_list$Border <- data.frame(py$NMIlist_border)
+NMI_list$all <- data.frame(py$NMIlist_all) 
+NMI_list$core <- data.frame(py$NMIlist_core) 
+NMI_list$intermediate <- data.frame(py$NMIlist_intermediate)
+NMI_list$marginal <- data.frame(py$NMIlist_marginal)
 
 ##Plot
 NMI_smp_list2 <- list()
 WeightNMI_smp_list <- list()
 
 for(z in 1:length(NMI_list)){ 
-  name <- head(scRNAlist[[z]]@meta.data$CellClass,1)
+  name <- head(scRNAlist[[z]]@meta.data$CellPopulation,1)
   tmp_NMI_smp <- NMI_list[[z]] %>%
     set_names(str_c(seq(0.1,1.4,0.1),"_",seq(0.2,1.5,0.1))) %>%
     t() %>%
@@ -121,13 +124,13 @@ for(z in 1:length(NMI_list)){
   #colnames(tmp_NMI_smp) <- NULL
   tmp_NMI_smp[,3] <- rownames(tmp_NMI_smp)
   rownames(tmp_NMI_smp) <- NULL
-  names(tmp_NMI_smp) <- c("NMI","CellClass","Resolution")
+  names(tmp_NMI_smp) <- c("NMI","CellPopulation","Resolution")
   NMI_smp_list2[[z]] <- tmp_NMI_smp
 }
 AllNMI <- do.call(rbind,NMI_smp_list2)
 
 AllNMI$CellClass <- as.factor(AllNMI$CellClass)
-AllNMI$CellClass <- factor(AllNMI$CellClass, levels = c("All","Center","Normal","Border"))
+AllNMI$CellClass <- factor(AllNMI$CellClass, levels = c("all","core","intermediate","marginal"))
 
 ptmp <- ggplot(data = AllNMI,
                mapping = aes(x = Resolution, y = NMI, group= CellClass, color = CellClass)) +
@@ -171,10 +174,10 @@ for x, y in zip(range(0,14), range(1,15)):
   tmpC_center = homogeneity_score(r.Center[:,x], r.Center[:,y])#change
   tmpC_normal = homogeneity_score(r.Normal[:,x], r.Normal[:,y])
   tmpC_border = homogeneity_score(r.Border[:,x], r.Border[:,y])
-Clist_all.append(tmpC_all)
-Clist_center.append(tmpC_center)
-Clist_normal.append(tmpC_normal)
-Clist_border.append(tmpC_border)#change
+  Clist_all.append(tmpC_all)
+  Clist_center.append(tmpC_center)
+  Clist_normal.append(tmpC_normal)
+  Clist_border.append(tmpC_border)#change
 quit
 
 C_list <- list()
@@ -225,6 +228,13 @@ write.table(AllC,
 
 #----
 #== Cell Type ASW ==#
+
+# The following naming corresponds to:
+# All - all cell
+# Center - core cell
+# Normal - intermediate cell
+# Border - marginal cell
+
 library(pacman)
 pacman::p_load(ggplot2,tidyverse,Hmisc,
                gtools,ggsignif,ggsci,
