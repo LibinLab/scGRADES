@@ -102,8 +102,8 @@ for ( i in 1:length(tmp_scRNAlist)) {
   aftqc_phisnf[[i]] <- ggplot(data_frame(scRNAlist[[i]]@meta.data), aes(nFeature_RNA)) + geom_histogram(binwidth = 100, bins = 300) + ggtitle(str_c("s",i,"_nFeature"))
   aftqc_phisnc[[i]] <- ggplot(data_frame(scRNAlist[[i]]@meta.data), aes(nCount_RNA)) + geom_histogram(binwidth = 100, bins = 300) + ggtitle(str_c("s",i,"_nCount"))
 }
-aftqc_p_his_nf <- wrap_plots(aftqc_phisnf, byrow = T, ncol = 3) #根据样本数量调整列数
-aftqc_p_his_nc <- wrap_plots(aftqc_phisnc, byrow = T, ncol = 3) #根据样本数量调整列数
+aftqc_p_his_nf <- wrap_plots(aftqc_phisnf, byrow = T, ncol = 3) # Set column number based on sample count
+aftqc_p_his_nc <- wrap_plots(aftqc_phisnc, byrow = T, ncol = 3) # Set column number based on sample count
 
 aftqc_p_vil <- VlnPlot(scRNA_merger_aftQC, 
                  pt.size = 0.1,
@@ -111,10 +111,10 @@ aftqc_p_vil <- VlnPlot(scRNA_merger_aftQC,
                  features = c("nFeature_RNA", "nCount_RNA", "percent_mito","percent_ribo","percent_hb"), 
                  ncol = 5)
 
-saveRDS(scRNAlist, file = "/public/home/wutong/test/GSE115469/Pt2_aftQC_scRNAlist.rds") #改路径
+saveRDS(scRNAlist, file = "/your_path/re.rds") 
 saveRDS(scRNA_merger_aftQC, file = "/public/home/wutong/test/GSE115469/Pt2_aftQC_scRNA_merge.rds") 
 write.table(state_table,"/public/home/wutong/test/GSE115469/Pt2_state_qc_table.xls", quote = F, sep = "\t", row.names = F)
-ggsave("/public/home/wutong/test/GSE115469/Pt2_aftQC_his_nF.pdf", plot = aftqc_p_his_nf, width = 6, height = 4) #根据样本数调整输出长宽
+ggsave("/public/home/wutong/test/GSE115469/Pt2_aftQC_his_nF.pdf", plot = aftqc_p_his_nf, width = 6, height = 4) 
 ggsave("/public/home/wutong/test/GSE115469/Pt2_aftQC_his_nC.pdf", plot = aftqc_p_his_nc, width = 6, height = 4) 
 ggsave("/public/home/wutong/test/GSE115469/Pt2_aftQC_vil.pdf", plot = aftqc_p_vil, width = 10, height = 4) 
 
