@@ -35,7 +35,7 @@ scRNA_CNB <- RunTSNE(scRNA_CNB,dims=1:30)
 #(2)分割降维聚类
 #scRNAlist_reintegrate
 scRNAlist <- SplitObject(scRNA, split.by = "CellClass")
-for(x in 2:length(scRNAlist)){
+for(x in 1:length(scRNAlist)){
   scRNAlist[[x]] <- RunPCA(scRNAlist[[x]], features=VariableFeatures(scRNAlist[[x]]),verbose = FALSE)
   scRNAlist[[x]] <- FindNeighbors(scRNAlist[[x]], reduction = "pca")
   scRNAlist[[x]] <- RunUMAP(scRNAlist[[x]],dims=1:50)
