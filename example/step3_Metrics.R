@@ -44,7 +44,7 @@ Smp_meta <- list()
 for(x in 1:length(scRNAlist)){
   for(i in seq(0.1,1.5,0.1)){
     n = i * 10
-    DefaultAssay(scRNAlist[[x]]) <- "integrated" #用重整合数据需要指定assay
+    DefaultAssay(scRNAlist[[x]]) <- "integrated"
     scRNAlist[[x]] <- RunPCA(scRNAlist[[x]], features=VariableFeatures(scRNAlist[[x]]),verbose = FALSE)
     scRNAlist[[x]] <- FindNeighbors(scRNAlist[[x]], reduction = "pca")
     scRNAlist[[x]] <- FindClusters(scRNAlist[[x]], resolution = i)
@@ -431,9 +431,9 @@ P_F3A <- ggplot(Allss, aes(CellClass, ASW))+
   theme(strip.background = element_blank(),
         strip.text.x = element_text(size = 10,colour = "black"),
         #legend.position = "none",
-        axis.title.x = element_text(size = 10,colour = "black"), #X轴标题大小
-        axis.title.y = element_text(size = 10,colour = "black"), #Y轴标题大小
-        axis.text.x = element_text(size = 10,colour = "black"), #X轴刻度标签大小
+        axis.title.x = element_text(size = 10,colour = "black"), 
+        axis.title.y = element_text(size = 10,colour = "black"), 
+        axis.text.x = element_text(size = 10,colour = "black"), 
         axis.text.y = element_text(size = 10,colour = "black")) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
   theme(panel.grid = element_blank()) +
@@ -447,9 +447,9 @@ stat.test2 <- stat.test %>% filter(group1 == "Core" | group2 == "Core")
 stat.test2 <- stat.test2 %>% add_xy_position() %>%
   mutate(xmin = c(1, 2.05, 2.05)) %>%
   mutate(xmax = c(1.95, 3, 4)) %>%
-  mutate(y.position = c(0.315,0.315,0.32))#添加XY位置
+  mutate(y.position = c(0.315,0.315,0.32))
 P_F3A <- P_F3A + stat_pvalue_manual(stat.test2, label = "p.adj.signif",
-                                    bracket.size = 0.5, # 粗细
+                                    bracket.size = 0.5, 
                                     tip.length = 0.01,
                                     label.size = 3)
 ggsave("P2_ASW.pdf", 
