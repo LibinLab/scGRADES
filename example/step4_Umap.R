@@ -79,13 +79,52 @@ scRNAlist[[4]]@meta.data$CellType <- factor(scRNAlist[4]]@meta.data$CellType,
                                                        "Proliferating cell","Unknown"))
 
 
-colors <- c("#DB7093","#FFDEAD","#C1FFC1","#C0937E",
-            "#FFD700","#A4D38E","#1C1C1C","#FF7F24",
-            "#CD0000","#3477A9","#BDA7CB","#684797",
-            "#FFFF00","#C0FF3E","#4A9D47","#8B5A2B",
-            "#FFA500","#BBFFFF","#B9D3EE","#00CED1",
-            "#696969","#F19294","#6495ED","#EE82EE",
-            "#8B0000","#CFCFCF")
+#UMAP
+umap_theme <- theme( 
+  axis.line=element_blank(), 
+  axis.text.x=element_blank(), 
+  axis.text.y=element_blank(), 
+  axis.ticks=element_blank(), 
+  axis.title.x=element_blank(), 
+  axis.title.y=element_blank(), 
+  panel.background=element_blank(), 
+  panel.border=element_blank(), 
+  panel.grid.major=element_blank(), 
+  panel.grid.minor=element_blank()
+) 
+
+my_cols <- c("activated Hepatic stellate cell" = "#DB7093", 
+             "resting Hepatic stellate cell" = "#8B864E",
+             "Central vein endothelial cell" = "#C1FFC1",
+             "Hepatic artery endothelial cell" = "#C0937E",
+             "Liver sinusoidal endothelial cell" = "#FFD700",
+             "Portal vein endothelial cell" = "#A4D38E",
+             "Lymphatic endothelial cell" = "#1C1C1C",
+             "Hepatocyte" = "#FF7F24",
+             "Cholangiocyte" = "#CD0000",
+             "cNK" = "#3477A9",
+             "lrNK" = "#BDA7CB",#liver resident NK
+             "Erythrocyte" = "#684797",
+             "B cell" =  "#F19294",
+             #"Plasma cell" = "#C0FF3E",
+             "Plasma cell" = "#8B008B",
+             "cDC1"= "#4A9D47",
+             "cDC2" = "#8B5A2B",
+             "pDC" = "#006400",
+             "Neutrophil progenitor" = "#FFA500",
+             "Mature neutrophil" = "#FFDAB9",
+             "Monocyte" = "#696969",
+             "Kupffer cell" = "#BBFFFF",
+             "MAIT" = "#B9D3EE",
+             "Mast cell" = "#00CED1",
+             "Naive T cell" = "#123456",
+             "CD8+ T" = "#6495ED",
+             "NKT" = "#EE82EE",
+             "Proliferative cell" = "#8B0000",
+             "Unknown" = "#ece9e9")
+
+my_cols2 <- my_cols[order(as.integer(names(my_cols)))]
+scales::show_col(my_cols2)
 
 P1_C_recluster <- DimPlot(scRNAlist[[1]], 
                 group.by = "CellType",
