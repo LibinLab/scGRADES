@@ -84,7 +84,7 @@ Seurat_obj <- IdentifyCoreCells(seurat_obj, dist = dist_mat, top_n = 20, resolut
 
 ```r
 # Step 1: Cluster the cells at multiple resolutions
-seurat_obj <- FindClusterAcrossRes(seurat_obj,resolutions = seq(0.2, 0.3, 0.1), reduction = "harmony")
+seurat_obj <- FindClusterAcrossRes(seurat_obj,resolutions = seq(0.1, 1.5, 0.1), reduction = "harmony")
 
 # Step 2: Compute PCA-based Euclidean distance
 dist_mat <- BuildCellGraph(seurat_obj, reduction = "harmony")
