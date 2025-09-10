@@ -25,16 +25,19 @@
 #' scRNA <- IdentifyCoreCells(scRNA, dist, top_n = 20, resolutions = seq(0.1, 1.5, 0.1))
 #' }
 
-utils::globalVariables(c("Cell1", "Cell2", "Dist", "CellClass", "pca"))
+utils::globalVariables(c("Cell1", "Cell2", "Dist", "CellClass"))
 
-IdentifyCoreCells_inter <- function(scRNA, dist, top_n = 20, resolutions = seq(0.1, 1.5, 0.1)) {
+IdentifyCoreCells_inter <- function(scRNA, 
+                                    dist, 
+                                    top_n = 20, 
+                                    resolutions = seq(0.1, 1.5, 0.1)) {
 #  library(dplyr)
 #  library(purrr)
 #  library(stringr)
   
   meta <- scRNA@meta.data
-  pca <- Seurat::Embeddings(scRNA, reduction = "pca")
-  cell_names <- rownames(pca)
+  #pca <- Seurat::Embeddings(scRNA, reduction = "pca")
+  cell_names <- rownames(scRNA@meta.data)
   
   res_cols <- grep("snn_res", colnames(meta), value = TRUE)
   if (length(res_cols) == 0) stop("No clustering resolutions found (e.g., 'snn_res.') in metadata.")

@@ -4,7 +4,7 @@
 \alias{BuildCellGraph}
 \title{BuildCellGraph}
 \usage{
-BuildCellGraph(...)
+BuildCellGraph(seurat_obj, reduction = "pca")
 }
 \arguments{
 \item{seurat_obj}{A Seurat object containing dimensionality reduction results.}

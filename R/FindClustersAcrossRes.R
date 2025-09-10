@@ -31,11 +31,20 @@ FindClusterAcrossRes <- function(...) {
 
 FindClusterAcrossRes_inter <- function(seurat_obj,
                                     resolutions = seq(0.1, 1.5, 0.1),
-                                    assay = "integrated") {
-  #require(Seurat)
-  Seurat::DefaultAssay(seurat_obj) <- assay
-  # 构建邻接图（默认用 assay_snn）
-  seurat_obj <- Seurat::FindNeighbors(seurat_obj)
+                                    assay = NULL,
+                                    reduction = NULL,
+                                    dims = 1:30) {
+  if (!is.null(assay)) {
+    Seurat::DefaultAssay(seurat_obj) <- assay
+  }
+  if (!is.null(reduction)) {
+    seurat_obj <- Seurat::FindNeighbors(seurat_obj,
+                                        reduction = reduction,
+                                        dims = dims)
+  } else {
+    seurat_obj <- Seurat::FindNeighbors(seurat_obj,
+                                        dims = dims)
+  }
   for (res in resolutions) {
     seurat_obj <- Seurat::FindClusters(seurat_obj, resolution = res)
   }

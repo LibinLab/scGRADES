@@ -42,9 +42,3 @@ BuildCellGraph_inter <- function(seurat_obj, reduction = "pca") {
   d <- bigdist::bigdist(pca_mat, method = "euclidean", file = fprefix)
   return(d)
 }
-
-BuildCellGraph <- function(...) {
-  id <- cli::cli_process_start("Computing PCA-based distance matrix ...")
-  on.exit(cli::cli_process_done(id), add = TRUE)
-  BuildCellGraph_inter(...)
-}
