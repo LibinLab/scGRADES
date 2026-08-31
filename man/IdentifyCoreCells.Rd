@@ -2,28 +2,78 @@
 % Please edit documentation in R/IdentifyCoreCells.R
 \name{IdentifyCoreCells}
 \alias{IdentifyCoreCells}
-\title{Identify Core Cells}
+\title{Identify Core Cells Across Clustering Resolutions}
+\usage{
+IdentifyCoreCells(
+  scRNA,
+  dist,
+  top_n = 20,
+  resolutions = seq(0.1, 1.5, 0.1),
+  CS = 1
+)
+}
 \arguments{
-\item{scRNA}{A Seurat object.}
+\item{scRNA}{A Seurat object containing clustering results in \code{meta.data}.}
 
-\item{dist}{A distance matrix (e.g., Euclidean distance between cells).}
+\item{dist}{A \code{bigdist} distance object whose cell order is identical to the
+row order of \code{scRNA@meta.data}.}
 
-\item{top_n}{Number of nearest neighbors to consider (default = 20).}
+\item{top_n}{A positive integer specifying the number of nearest neighbors,
+K. The default is \code{20}.}
 
-\item{resolutions}{A numeric vector of resolution values used in clustering (e.g., c(0.1, 0.2, ..., 1.5)).}
+\item{resolutions}{A non-empty numeric vector containing the clustering
+resolutions to evaluate. The default is \code{seq(0.1, 1.5, 0.1)}.}
+
+\item{CS}{One or more numeric cutoffs between \code{0} and \code{1}. A cell is labeled
+as a core cell for a cutoff when the fraction of resolutions at which it
+is core is greater than or equal to that cutoff. The default \code{CS = 1}
+reproduces the strict manuscript definition, which requires the cell to
+be core at every resolution.}
 }
 \value{
-A Seurat object with updated meta.data including CellClass annotations.
+The input Seurat object with one \verb{CellPopulation_CS_<cutoff>} column
+added to \code{meta.data} for each requested CS cutoff. Each column contains
+either \code{"core cell"} or \code{"marginal cell"}. For example, \code{CS = 0.95}
+produces \code{CellPopulation_CS_0.95}.
 }
 \description{
-This function identifies "core" cells based on their local neighborhood consistency
-across multiple clustering resolutions.
+Identify core cells from K-nearest-neighbor consistency across multiple
+clustering resolutions. At a given resolution, a cell is considered core
+when all of its K nearest neighbors belong to the same cluster. The final
+classification requires the fraction of resolutions at which the cell is
+core to be greater than or equal to a user-specified CS cutoff.
 }
 \details{
-Identify Core Cells Based on Cluster Consistency
+For cell i at resolution r, the within-cluster neighbor consistency is
+
+\verb{S(r, i) = (number of same-cluster neighbors) / K}.
+
+The cell is core at resolution r only when \code{S(r, i) = 1}. For a user-supplied
+cutoff, the final classification is core when
+
+\verb{(number of core resolutions) / (number of evaluated resolutions) >= CS}.
+
+Exactly \code{top_n} neighbors are retained. If distances are tied at the K-th
+position, ties are resolved using their existing cell order.
 }
 \examples{
 \dontrun{
-scRNA <- IdentifyCoreCells(scRNA, dist, top_n = 20, resolutions = seq(0.1, 1.5, 0.1))
+# Strict manuscript definition
+seurat_obj <- IdentifyCoreCells(
+  scRNA = seurat_obj,
+  dist = dist_mat,
+  top_n = 20,
+  resolutions = seq(0.1, 1.5, 0.1),
+  CS = 1
+)
+
+# Robustness analysis using multiple CS cutoffs
+seurat_obj <- IdentifyCoreCells(
+  scRNA = seurat_obj,
+  dist = dist_mat,
+  top_n = 20,
+  resolutions = seq(0.1, 1.5, 0.1),
+  CS = c(1, 0.95, 0.9, 0.8)
+)
 }
 }
