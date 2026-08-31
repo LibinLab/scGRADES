@@ -35,9 +35,6 @@ install.packages("devtools")
 
 # Install directly from GitHub
 devtools::install_github("LibinLab/scGRADES")
-
-#Install R package
-install.packages("ScGRADES")
 ```
 
 ### Dependencies
