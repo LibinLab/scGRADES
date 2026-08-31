@@ -62,6 +62,9 @@ We provide a small Seurat object as an example dataset for testing and demonstra
 
 ```r
 library(ScGRADES)
+library(Seurat)
+library(bigdist)
+library(dplyr)
 
 # Load the example dataset
 seurat_obj <- readRDS("your_data.rds")
