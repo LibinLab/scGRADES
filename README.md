@@ -68,6 +68,7 @@ library(ScGRADES)
 
 # Load the example dataset
 seurat_obj <- readRDS("your_data.rds")
+
 DefaultAssay(seurat_obj) <- "integrated"
 
 # Step 1: Cluster the cells at multiple resolutions
@@ -77,7 +78,10 @@ seurat_obj <- FindClusterAcrossRes(seurat_obj, resolutions = seq(0.1, 1.5, 0.1))
 dist_mat <- BuildCellGraph(seurat_obj, reduction = "pca")
 
 # Step 3: Identify core cells
-Seurat_obj <- IdentifyCoreCells(seurat_obj, dist = dist_mat, top_n = 20, resolutions = seq(0.1, 1.5, 0.1))
+seurat_obj <- IdentifyCoreCells(seurat_obj, dist = dist_mat, top_n = 20, resolutions = seq(0.1, 1.5, 0.1), CS = 1)
+
+# Optional: evaluate multiple CS thresholds for robustness analysis
+seurat_obj_robustness <- IdentifyCoreCells(seurat_obj, dist = dist_mat, top_n = 20, resolutions = seq(0.1, 1.5, 0.1), CS = c(1, 0.75, 0.5))
 ```
 
 ## Usage (Harmony integration)
@@ -90,7 +94,7 @@ seurat_obj <- FindClusterAcrossRes(seurat_obj,resolutions = seq(0.1, 1.5, 0.1), 
 dist_mat <- BuildCellGraph(seurat_obj, reduction = "harmony")
 
 # Step 3: Identify core cells
-Seurat_obj <- IdentifyCoreCells(seurat_obj, dist = dist_mat, top_n = 20, resolutions = seq(0.1, 1.5, 0.1))
+seurat_obj <- IdentifyCoreCells(seurat_obj, dist = dist_mat, top_n = 20, resolutions = seq(0.1, 1.5, 0.1), CS = 1)
 ```
 
 ---
@@ -99,7 +103,6 @@ Seurat_obj <- IdentifyCoreCells(seurat_obj, dist = dist_mat, top_n = 20, resolut
 
 - Adds a `CellPopulation` column to `seurat_obj@meta.data`, labeling cells as:
   - `core cell`: clusters are clear and consistent
-  - `intermediate cell`: clusters are partially clear
   - `marginal cell`: clusters are unclear
 
 
